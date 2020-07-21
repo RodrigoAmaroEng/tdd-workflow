@@ -12,8 +12,7 @@ Features:
 - Must apply taxes from each country
  **/
 
-// STEP 1: Prioritize most valuable deliverable
-// In this case it can be converting (any) two currencies
+// STEP 2: Refactor current implementation to better describe and structure the solution
 class CurrencyConverterTest {
     @Test
     fun `Converting MXN to USD should return 22_59`() {
@@ -22,9 +21,12 @@ class CurrencyConverterTest {
     }
 }
 
-// VERSION 1: Simple as possible to cover the proposed test
+// VERSION 2: Minor improvements to better structure
+typealias Currency = String
+typealias Amount = BigDecimal
+
 class Converter {
-    fun convert(from: String, to: String): BigDecimal {
+    fun convert(from: Currency, to: Currency): Amount {
         return 22.59.toBigDecimal()
     }
 }
