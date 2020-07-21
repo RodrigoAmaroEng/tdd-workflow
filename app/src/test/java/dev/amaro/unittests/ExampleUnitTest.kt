@@ -12,24 +12,28 @@ Features:
 - Must apply taxes from each country
  **/
 
-// STEP 2: Refactor current implementation to better describe and structure the solution
+// STEP 3: Exercise current solution with other similar case
 class CurrencyConverterTest {
     @Test
     fun `Converting MXN to USD should return 22_59`() {
         val converter = Converter()
         assertEquals(22.59.toBigDecimal(), converter.convert("MXN", "USD"))
     }
+
+    @Test
+    fun `Converting USD to EUR should return 1_35`() {
+        val converter = Converter()
+        assertEquals(1.35.toBigDecimal(), converter.convert("USD", "EUR"))
+    }
 }
 
-// VERSION 2: Minor improvements to better structure
+// The new test will force us to rethink current solution
 typealias Currency = String
 typealias Amount = BigDecimal
-
 class Converter {
     fun convert(from: Currency, to: Currency): Amount {
         return 22.59.toBigDecimal()
     }
 }
-
 
 
