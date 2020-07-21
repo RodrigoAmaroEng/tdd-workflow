@@ -3,6 +3,7 @@ package dev.amaro.unittests
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.math.BigDecimal
+import java.math.RoundingMode
 
 /**
 App Proposal: Currency converter
@@ -12,7 +13,8 @@ Features:
 - Must apply taxes from each country
  **/
 
-// STEP 8: Again we can do some refactor to make the code more readable
+// STEP 9: Now we can start working in the last feature to apply taxes.
+// As always we take the easiest path first
 class CurrencyConverterTest {
 
     @Test
@@ -35,15 +37,24 @@ class CurrencyConverterTest {
         assertEquals("2.70 EUR", amount.toString())
     }
 
+    @Test
+    fun `Convert value discounting tax`() {
+        val converter = Converter(provideRateAs(1.35))
+        val amount = converter.convert("USD", "EUR", amountFor(2), 2.5)
+        assertEquals("2.63 EUR", amount.toString())
+    }
+
     private fun provideRateAs(rate: Double) = object : RateProvider {
         override fun rateFor(from: Currency, to: Currency): Rate {
             return rate.toBigDecimal()
         }
     }
-    private fun amountFor(value : Int) = Amount(value.toBigDecimal())
+
+    private fun amountFor(value: Int) = Amount(value.toBigDecimal())
 }
 
 
+// VERSION 6: Changes to consider the Tax when providing the final conversion amount
 typealias Currency = String
 
 data class Amount(
@@ -51,7 +62,8 @@ data class Amount(
     val currency: Currency? = null
 ) {
     override fun toString(): String {
-        return "$value $currency"
+        // Fixing decimal places, something that we haven't figured out till now
+        return "${value.setScale(2, RoundingMode.HALF_UP)} $currency"
     }
 }
 
@@ -62,8 +74,14 @@ interface RateProvider {
 }
 
 class Converter(private val rateProvider: RateProvider) {
-    fun convert(from: Currency, to: Currency, amount: Amount = Amount(BigDecimal.ONE)): Amount {
-        return Amount(rateProvider.rateFor(from, to).times(amount.value), to)
+    fun convert(
+        from: Currency,
+        to: Currency,
+        amount: Amount = Amount(BigDecimal.ONE),
+        tax: Double = 0.0
+    ): Amount {
+        val taxMultiplier = BigDecimal(1.0 - (tax/100))
+        return Amount(rateProvider.rateFor(from, to).times(amount.value).times(taxMultiplier), to)
     }
 }
 
