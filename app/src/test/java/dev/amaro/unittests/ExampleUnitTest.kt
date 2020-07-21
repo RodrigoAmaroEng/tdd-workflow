@@ -13,8 +13,7 @@ Features:
 - Must apply taxes from each country
  **/
 
-// STEP 9: Now we can start working in the last feature to apply taxes.
-// As always we take the easiest path first
+// STEP 10: There is room to improve how we handle taxes, lets refactor
 class CurrencyConverterTest {
 
     @Test
@@ -40,7 +39,7 @@ class CurrencyConverterTest {
     @Test
     fun `Convert value discounting tax`() {
         val converter = Converter(provideRateAs(1.35))
-        val amount = converter.convert("USD", "EUR", amountFor(2), 2.5)
+        val amount = converter.convert("USD", "EUR", amountFor(2), Tax(2.5))
         assertEquals("2.63 EUR", amount.toString())
     }
 
@@ -54,16 +53,28 @@ class CurrencyConverterTest {
 }
 
 
-// VERSION 6: Changes to consider the Tax when providing the final conversion amount
+// VERSION 7: Changes to improve dealing with Taxes
 typealias Currency = String
+
+// This would help us dealing with the calculation involved about Taxes
+class Tax(value: BigDecimal) {
+    constructor(value: Double) : this(value.toBigDecimal())
+
+    val value: BigDecimal = value.divide(BigDecimal(100))
+}
 
 data class Amount(
     val value: BigDecimal,
     val currency: Currency? = null
 ) {
     override fun toString(): String {
-        // Fixing decimal places, something that we haven't figured out till now
+
         return "${value.setScale(2, RoundingMode.HALF_UP)} $currency"
+    }
+
+    // Adding this makes sentences more readable
+    operator fun minus(t: Tax): Amount {
+        return Amount(this.value.multiply(BigDecimal.ONE.minus(t.value)), this.currency)
     }
 }
 
@@ -78,10 +89,9 @@ class Converter(private val rateProvider: RateProvider) {
         from: Currency,
         to: Currency,
         amount: Amount = Amount(BigDecimal.ONE),
-        tax: Double = 0.0
+        tax: Tax = Tax(BigDecimal.ZERO)
     ): Amount {
-        val taxMultiplier = BigDecimal(1.0 - (tax/100))
-        return Amount(rateProvider.rateFor(from, to).times(amount.value).times(taxMultiplier), to)
+        return Amount(rateProvider.rateFor(from, to).times(amount.value), to) - tax
     }
 }
 
