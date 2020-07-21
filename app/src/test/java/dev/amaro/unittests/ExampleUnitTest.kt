@@ -12,8 +12,7 @@ Features:
 - Must apply taxes from each country
  **/
 
-// STEP 7: Now lets handle how the amount is presented after its conversion
-// The proposed solution happens to mess with tests so we have to check them
+// STEP 8: Again we can do some refactor to make the code more readable
 class CurrencyConverterTest {
 
     @Test
@@ -25,14 +24,15 @@ class CurrencyConverterTest {
     @Test
     fun `Converting 2 USD to EUR should return 2_70`() {
         val converter = Converter(provideRateAs(1.35))
-        assertEquals(BigDecimal("2.70"), converter.convert("USD", "EUR", Amount(BigDecimal(2))).value)
+        val amount = converter.convert("USD", "EUR", amountFor(2))
+        assertEquals(BigDecimal("2.70"), amount.value)
     }
 
     @Test
-    // The proposal is to present the value along its currency
     fun `When print the amount it should present its currency`() {
         val converter = Converter(provideRateAs(1.35))
-        assertEquals("2.70 EUR", converter.convert("USD", "EUR", Amount(BigDecimal(2))).toString())
+        val amount = converter.convert("USD", "EUR", amountFor(2))
+        assertEquals("2.70 EUR", amount.toString())
     }
 
     private fun provideRateAs(rate: Double) = object : RateProvider {
@@ -40,14 +40,16 @@ class CurrencyConverterTest {
             return rate.toBigDecimal()
         }
     }
+    private fun amountFor(value : Int) = Amount(value.toBigDecimal())
 }
 
 
-
-// VERSION 5: We have to change quite a bit piece of code to achieve it
 typealias Currency = String
 
-data class Amount(val value: BigDecimal, val currency: Currency? = null) {
+data class Amount(
+    val value: BigDecimal,
+    val currency: Currency? = null
+) {
     override fun toString(): String {
         return "$value $currency"
     }
