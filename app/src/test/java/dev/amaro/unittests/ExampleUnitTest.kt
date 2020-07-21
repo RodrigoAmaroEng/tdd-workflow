@@ -12,7 +12,7 @@ Features:
 - Must apply taxes from each country
  **/
 
-// STEP 5: Now we have the chance to improve our test's quality by refactoring them
+// STEP 6: We can start informing the amount to convert
 class CurrencyConverterTest {
 
     @Test
@@ -22,9 +22,10 @@ class CurrencyConverterTest {
     }
 
     @Test
-    fun `Converting USD to EUR should return 1_35`() {
+    // Lets change this test to conform the proposal
+    fun `Converting 2 USD to EUR should return 2_70`() {
         val converter = Converter(provideRateAs(1.35))
-        assertEquals(1.35.toBigDecimal(), converter.convert("USD", "EUR"))
+        assertEquals(BigDecimal("2.70"), converter.convert("USD", "EUR", BigDecimal(2)))
     }
 
     private fun provideRateAs(rate: Double) = object : RateProvider {
@@ -34,7 +35,7 @@ class CurrencyConverterTest {
     }
 }
 
-// No changes in our implementation at this point
+
 typealias Currency = String
 typealias Amount = BigDecimal
 typealias Rate = BigDecimal
@@ -42,10 +43,10 @@ typealias Rate = BigDecimal
 interface RateProvider {
     fun rateFor(from: Currency, to: Currency): Rate
 }
-
+// VERSION 4: We change the solution to calculate the converted amount
 class Converter(private val rateProvider: RateProvider) {
-    fun convert(from: Currency, to: Currency): Amount {
-        return rateProvider.rateFor(from, to)
+    fun convert(from: Currency, to: Currency, amount: Amount = BigDecimal.ONE): Amount {
+        return rateProvider.rateFor(from, to).times(amount)
     }
 }
 
