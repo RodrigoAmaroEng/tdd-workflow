@@ -12,33 +12,29 @@ Features:
 - Must apply taxes from each country
  **/
 
-// STEP 4: One solution would be having another class to help defining rates.
-// We need to make the tests ensure the proposed solution...
+// STEP 5: Now we have the chance to improve our test's quality by refactoring them
 class CurrencyConverterTest {
+
     @Test
     fun `Converting MXN to USD should return 22_59`() {
-        val provider = object : RateProvider {
-            override fun rateFor(from: Currency, to: Currency): Rate {
-                return 22.59.toBigDecimal()
-            }
-        }
-        val converter = Converter(provider)
+        val converter = Converter(provideRateAs(22.59))
         assertEquals(22.59.toBigDecimal(), converter.convert("MXN", "USD"))
     }
 
     @Test
     fun `Converting USD to EUR should return 1_35`() {
-        val provider = object : RateProvider {
-            override fun rateFor(from: Currency, to: Currency): Rate {
-                return 1.35.toBigDecimal()
-            }
-        }
-        val converter = Converter(provider)
+        val converter = Converter(provideRateAs(1.35))
         assertEquals(1.35.toBigDecimal(), converter.convert("USD", "EUR"))
+    }
+
+    private fun provideRateAs(rate: Double) = object : RateProvider {
+        override fun rateFor(from: Currency, to: Currency): Rate {
+            return rate.toBigDecimal()
+        }
     }
 }
 
-// VERSION 3: ...And change the class to conform the solution proposed by our tests
+// No changes in our implementation at this point
 typealias Currency = String
 typealias Amount = BigDecimal
 typealias Rate = BigDecimal
