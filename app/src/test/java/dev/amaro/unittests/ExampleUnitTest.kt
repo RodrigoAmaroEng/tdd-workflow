@@ -4,18 +4,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.math.BigDecimal
 import java.math.RoundingMode
-import kotlin.reflect.KProperty
 
-/**
-App Proposal: Currency converter
-Features:
-- Accept many currencies
-- Must check current conversion rate automatically
-- Must apply taxes from each country
- **/
 
-// STEP 11: As we know, taxes are given by country.
-// Users are not interested in knowing each one so the App should retrieve and apply it automatically
 class CurrencyConverterTest {
 
     @Test
@@ -61,57 +51,5 @@ class CurrencyConverterTest {
 }
 
 
-// VERSION 8: We need to pass the TaxProvider to the Converter instance
-typealias Currency = String
 
-class Tax(value: BigDecimal) {
-    constructor(value: Double) : this(value.toBigDecimal())
-
-    val value: BigDecimal = value.divide(BigDecimal(100))
-}
-
-// This small change formats the value to prevent equality errors
-data class Amount(
-    private val _value: BigDecimal,
-    val currency: Currency? = null
-) {
-    val value: BigDecimal
-        get() = _value.setScale(2, RoundingMode.HALF_UP)
-
-    override fun toString(): String {
-        return "$value $currency"
-    }
-
-    operator fun minus(t: Tax): Amount {
-        return Amount(this.value.multiply(BigDecimal.ONE.minus(t.value)), this.currency)
-    }
-}
-
-typealias Rate = BigDecimal
-
-interface RateProvider {
-    fun rateFor(from: Currency, to: Currency): Rate
-}
-// Here is our TaxProvider with an option for no taxes
-interface TaxProvider {
-    fun taxFor(target: Currency): Tax
-
-    object NoTaxes : TaxProvider {
-        override fun taxFor(target: Currency): Tax = Tax(0.0)
-    }
-}
-
-class Converter(
-    private val rateProvider: RateProvider,
-    private val taxProvider: TaxProvider = TaxProvider.NoTaxes
-) {
-    fun convert(
-        from: Currency,
-        to: Currency,
-        amount: Amount = Amount(BigDecimal.ONE)
-    ): Amount {
-        return Amount(rateProvider.rateFor(from, to)
-            .times(amount.value), to) - taxProvider.taxFor(to)
-    }
-}
 
