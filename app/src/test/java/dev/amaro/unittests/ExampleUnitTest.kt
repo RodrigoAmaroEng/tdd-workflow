@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.math.BigDecimal
 import java.math.RoundingMode
+import kotlin.reflect.KProperty
 
 /**
 App Proposal: Currency converter
@@ -13,7 +14,8 @@ Features:
 - Must apply taxes from each country
  **/
 
-// STEP 10: There is room to improve how we handle taxes, lets refactor
+// STEP 11: As we know, taxes are given by country.
+// Users are not interested in knowing each one so the App should retrieve and apply it automatically
 class CurrencyConverterTest {
 
     @Test
@@ -38,8 +40,8 @@ class CurrencyConverterTest {
 
     @Test
     fun `Convert value discounting tax`() {
-        val converter = Converter(provideRateAs(1.35))
-        val amount = converter.convert("USD", "EUR", amountFor(2), Tax(2.5))
+        val converter = Converter(provideRateAs(1.35), provideTaxAs(2.5))
+        val amount = converter.convert("USD", "EUR", amountFor(2))
         assertEquals("2.63 EUR", amount.toString())
     }
 
@@ -49,30 +51,37 @@ class CurrencyConverterTest {
         }
     }
 
+    private fun provideTaxAs(value: Double) = object : TaxProvider {
+        override fun taxFor(target: Currency): Tax {
+            return Tax(value)
+        }
+    }
+
     private fun amountFor(value: Int) = Amount(value.toBigDecimal())
 }
 
 
-// VERSION 7: Changes to improve dealing with Taxes
+// VERSION 8: We need to pass the TaxProvider to the Converter instance
 typealias Currency = String
 
-// This would help us dealing with the calculation involved about Taxes
 class Tax(value: BigDecimal) {
     constructor(value: Double) : this(value.toBigDecimal())
 
     val value: BigDecimal = value.divide(BigDecimal(100))
 }
 
+// This small change formats the value to prevent equality errors
 data class Amount(
-    val value: BigDecimal,
+    private val _value: BigDecimal,
     val currency: Currency? = null
 ) {
-    override fun toString(): String {
+    val value: BigDecimal
+        get() = _value.setScale(2, RoundingMode.HALF_UP)
 
-        return "${value.setScale(2, RoundingMode.HALF_UP)} $currency"
+    override fun toString(): String {
+        return "$value $currency"
     }
 
-    // Adding this makes sentences more readable
     operator fun minus(t: Tax): Amount {
         return Amount(this.value.multiply(BigDecimal.ONE.minus(t.value)), this.currency)
     }
@@ -83,15 +92,26 @@ typealias Rate = BigDecimal
 interface RateProvider {
     fun rateFor(from: Currency, to: Currency): Rate
 }
+// Here is our TaxProvider with an option for no taxes
+interface TaxProvider {
+    fun taxFor(target: Currency): Tax
 
-class Converter(private val rateProvider: RateProvider) {
+    object NoTaxes : TaxProvider {
+        override fun taxFor(target: Currency): Tax = Tax(0.0)
+    }
+}
+
+class Converter(
+    private val rateProvider: RateProvider,
+    private val taxProvider: TaxProvider = TaxProvider.NoTaxes
+) {
     fun convert(
         from: Currency,
         to: Currency,
-        amount: Amount = Amount(BigDecimal.ONE),
-        tax: Tax = Tax(BigDecimal.ZERO)
+        amount: Amount = Amount(BigDecimal.ONE)
     ): Amount {
-        return Amount(rateProvider.rateFor(from, to).times(amount.value), to) - tax
+        return Amount(rateProvider.rateFor(from, to)
+            .times(amount.value), to) - taxProvider.taxFor(to)
     }
 }
 
